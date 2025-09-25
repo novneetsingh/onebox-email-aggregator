@@ -6,6 +6,7 @@ import { accounts } from "./config/imap";
 import { startImap } from "./services/imap.service";
 import { checkEsConnection } from "./config/elasticsearch";
 import ErrorResponse from "./utils/errorResponse";
+import emailRoutes from "./routes/email.route";
 
 const app: Application = express();
 
@@ -13,11 +14,11 @@ app.use(express.json());
 app.use(cors());
 
 // Start IMAP for all accounts
-// (async () => {
-//   for (const account of accounts) {
-//     startImap(account).catch((err) => console.error(err));
-//   }
-// })();
+(async () => {
+  for (const account of accounts) {
+    startImap(account).catch((err) => console.error(err));
+  }
+})();
 
 // Check Elasticsearch connection
 checkEsConnection();
@@ -25,6 +26,9 @@ checkEsConnection();
 app.get("/", (req, res) => {
   res.send("Onebox Email Aggregator");
 });
+
+// Email routes
+app.use("/email", emailRoutes);
 
 // global error handling middleware
 app.use(
@@ -37,6 +41,7 @@ app.use(
   }
 );
 
-app.listen(process.env.PORT || 4000, () => {
-  console.log(`Server started on port ${process.env.PORT || 4000}`);
+const port = process.env.PORT || 4000;
+app.listen(port, () => {
+  console.log(`Server is running at http://localhost:${port}`);
 });
