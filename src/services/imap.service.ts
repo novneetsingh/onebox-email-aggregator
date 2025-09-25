@@ -1,51 +1,47 @@
 import { ImapFlow } from "imapflow";
-import { processEmail } from "./emailProcessor.service";
+import { processEmail, EmailData } from "./emailProcessor.service";
+import { saveEmailsInBulk, saveEmail } from "./openbox.service";
 
 export async function startImap(accountConfig: any) {
   const client = new ImapFlow(accountConfig);
-
   await client.connect();
-
   console.log(`✅ Connected to ${accountConfig.auth.user}`);
 
-  // Lock inbox
-  // let lock = await client.getMailboxLock("INBOX");
-
-  // Open mailbox
   await client.mailboxOpen("INBOX");
 
-  // Get date for 1 day ago
   const since = new Date();
-  since.setDate(since.getDate() - 1);
-
-  // Search for messages since that date
+  since.setDate(since.getDate() - 30); // Fetches for the last 30 days
   const messages = await client.search({ since });
 
-  if (!messages) {
-    // console.log("📭 No emails found in the last 1 day");
-    return;
+  // --- Initial Fetch with Local Batching ---
+  if (messages && messages.length > 0) {
+    let emailBatch: EmailData[] = [];
+
+    for await (let msg of client.fetch(messages, {
+      envelope: true,
+      source: true,
+    })) {
+      emailBatch.push(processEmail(accountConfig.name, msg));
+    }
+
+    if (emailBatch.length > 0) {
+      await saveEmailsInBulk(emailBatch);
+
+      console.log(`💾 Saved ${emailBatch.length} emails.`);
+    }
+  } else {
+    console.log("📭 No new emails found in the last 30 days");
   }
 
-  // Fetch the matching messages
-  for await (let msg of client.fetch(messages, {
-    envelope: true,
-    source: true,
-  })) {
-    await processEmail(accountConfig.name, msg);
-  }
+  // --- Real-time listener for new messages ---
+  client.on("exists", async (data) => {
+    const newMsg = await client.fetchOne(`${data.count}`, {
+      envelope: true,
+      source: true,
+    });
 
-  // Real-time listener for new messages
-  // client.on("exists", async (msgCount) => {
-  //   const newMsg = await client.fetchOne(`${msgCount}`, {
-  //     envelope: true,
-  //     source: true,
-  //   });
-  //   console.log("⚡ New Email:", newMsg.envelope.subject);
-  //   await processEmail(accountConfig.name, newMsg);
-  // });
+    await saveEmail(processEmail(accountConfig.name, newMsg));
 
-  // lock.release();
-
-  // Don’t logout immediately — keep connection alive for IDLE mode
-  // await client.logout();
+    console.log("💾 Saved new email.");
+  });
 }

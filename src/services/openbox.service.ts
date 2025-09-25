@@ -10,6 +10,23 @@ export async function saveEmail(email: EmailData) {
   });
 }
 
+// save emails in bulk in Elasticsearch
+export async function saveEmailsInBulk(emails: EmailData[]) {
+  if (emails.length === 0) return;
+
+  const operations = emails.flatMap((email) => [
+    {
+      index: {
+        _index: "openbox-emails",
+        _id: `${email.account}-${email.messageId}`,
+      },
+    },
+    email,
+  ]);
+
+  await esClient.bulk({ operations });
+}
+
 // Search email in Elasticsearch
 export async function searchEmail(query: string) {
   const response = await esClient.search({
@@ -17,10 +34,11 @@ export async function searchEmail(query: string) {
     query: {
       multi_match: {
         query: query,
-        fields: ["subject", "from", "body", "account", "date"],
+        fields: ["subject", "from", "body", "account"],
       },
     },
     _source: ["subject", "from", "account", "date"],
+    sort: [{ date: { order: "desc" } }],
   });
 
   return response.hits.hits;
@@ -34,6 +52,8 @@ export async function getAllEmails() {
       match_all: {},
     },
     _source: ["subject", "from", "account", "date"],
+    sort: [{ date: { order: "desc" } }],
+    size: 100,
   });
 
   return response.hits.hits;
