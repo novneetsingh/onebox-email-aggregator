@@ -41,7 +41,7 @@ export async function searchEmail(query: string) {
     sort: [{ date: { order: "desc" } }],
   });
 
-  return response.hits.hits;
+  return response.hits.hits.map((hit) => hit._source);
 }
 
 // get all emails from Elasticsearch
@@ -56,5 +56,15 @@ export async function getAllEmails() {
     size: 100,
   });
 
-  return response.hits.hits;
+  return response.hits.hits.map((hit) => hit._source);
+}
+
+// delete all emails from Elasticsearch
+export async function deleteAllEmails() {
+  await esClient.deleteByQuery({
+    index: "openbox-emails",
+    query: {
+      match_all: {},
+    },
+  });
 }

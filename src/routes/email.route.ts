@@ -1,5 +1,9 @@
 import { Router, Request, Response } from "express";
-import { getAllEmails, searchEmail } from "../services/openbox.service";
+import {
+  getAllEmails,
+  searchEmail,
+  deleteAllEmails,
+} from "../services/openbox.service";
 
 const router = Router();
 
@@ -26,6 +30,16 @@ router.get("/all", async (req: Request, res: Response) => {
     message: result.length > 0 ? "Emails found" : "No emails found",
     count: result.length,
     data: result,
+  });
+});
+
+// delete all emails
+router.delete("/all", async (req: Request, res: Response) => {
+  await deleteAllEmails();
+
+  res.status(200).json({
+    success: true,
+    message: "All emails deleted",
   });
 });
 
