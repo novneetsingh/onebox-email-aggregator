@@ -1,6 +1,6 @@
 import express, { Application, NextFunction, Request, Response } from "express";
 import dotenv from "dotenv";
-dotenv.config();
+dotenv.config({ debug: true });
 import cors from "cors";
 import { accounts } from "./config/imap";
 import { startImap } from "./services/imap.service";

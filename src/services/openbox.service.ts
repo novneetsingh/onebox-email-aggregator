@@ -2,20 +2,45 @@ import esClient from "../config/elasticsearch";
 import geminiModel from "../config/geminiAI";
 import { EmailData } from "./emailProcessor.service";
 
+// create a index in elasticsearch
+export async function createIndex() {
+  await esClient.indices.create({
+    index: "openbox-emails",
+    body: {
+      mappings: {
+        properties: {
+          account: { type: "keyword" },
+          messageId: { type: "keyword" },
+          folder: { type: "keyword" },
+          subject: { type: "text" },
+          from: { type: "text" },
+          body: { type: "text" },
+          category: { type: "keyword" },
+          date: { type: "date" },
+        },
+      },
+    },
+  });
+}
+
 // Save email to Elasticsearch
 export async function saveEmail(email: EmailData) {
   await esClient.index({
     index: "openbox-emails",
     id: `${email.account}-${email.messageId}`,
-    document: email,
+    body: email,
+    refresh: true,
   });
 }
 
-// save emails in bulk in Elasticsearch
+// Save emails in bulk in Elasticsearch
 export async function saveEmailsInBulk(emails: EmailData[]) {
-  if (emails.length === 0) return;
+  const exists = await esClient.indices.exists({ index: "openbox-emails" });
+  if (!exists.body) {
+    await createIndex();
+  }
 
-  const operations = emails.flatMap((email) => [
+  const body = emails.flatMap((email) => [
     {
       index: {
         _index: "openbox-emails",
@@ -25,45 +50,47 @@ export async function saveEmailsInBulk(emails: EmailData[]) {
     email,
   ]);
 
-  await esClient.bulk({ operations });
+  await esClient.bulk({ body, refresh: true });
 }
 
-// Search email in Elasticsearch
+// Search emails in Elasticsearch
 export async function searchEmail(query: string) {
   const response = await esClient.search({
     index: "openbox-emails",
-    query: {
-      multi_match: {
-        query: query,
-        fields: ["subject", "from", "body", "category"],
+    body: {
+      query: {
+        multi_match: {
+          query,
+          fields: ["subject", "from", "body", "category"],
+        },
       },
+      sort: [{ date: { order: "desc" } }],
     },
-    sort: [{ date: { order: "desc" } }],
   });
 
-  return response.hits.hits.map((hit) => hit._source);
+  return response.body.hits.hits.map((hit: any) => hit._source);
 }
 
-// get all emails from Elasticsearch
+// Get all emails from Elasticsearch
 export async function getAllEmails() {
   const response = await esClient.search({
     index: "openbox-emails",
-    query: {
-      match_all: {},
+    body: {
+      query: { match_all: {} },
+      sort: [{ date: { order: "desc" } }],
+      size: 100,
     },
-    sort: [{ date: { order: "desc" } }],
-    size: 100,
   });
 
-  return response.hits.hits.map((hit) => hit._source);
+  return response.body.hits.hits.map((hit: any) => hit._source);
 }
 
-// delete all emails from Elasticsearch
+// Delete all emails from Elasticsearch
 export async function deleteAllEmails() {
   await esClient.deleteByQuery({
     index: "openbox-emails",
-    query: {
-      match_all: {},
+    body: {
+      query: { match_all: {} },
     },
   });
 }
@@ -86,7 +113,7 @@ export async function categorizeEmail(
     """${body}"""
 
     Answer with only the category name.
-    `;
+  `;
 
   const result = await geminiModel.generateContent(prompt);
   const category = result.response.text().trim();

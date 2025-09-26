@@ -1,19 +1,15 @@
 import { Client } from "@elastic/elasticsearch";
 
 const esClient = new Client({
-  node: "http://localhost:9200",
+  node: process.env.ES_URL!,
 });
 
 export async function checkEsConnection() {
   try {
-    const response = await esClient.ping();
-
-    if (response) {
-      console.log("✅ Elasticsearch is connected.");
-      return;
-    }
+    await esClient.ping();
+    console.log("✅ Connected to Bonsai Elasticsearch.");
   } catch (error) {
-    console.error(error);
+    console.error("❌ Elasticsearch connection failed:", error);
     process.exit(1);
   }
 }
