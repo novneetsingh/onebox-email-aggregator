@@ -17,11 +17,13 @@
     "cors": "^2.8.5",
     "dotenv": "^17.2.2",
     "express": "^5.1.0",
-    "imapflow": "^1.0.197"
+    "imapflow": "^1.0.197",
+    "mailparser": "^3.7.4"
   },
   "devDependencies": {
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.3",
+    "@types/mailparser": "^3.4.6",
     "@types/node": "^24.5.2",
     "ts-node": "^10.9.2",
     "typescript": "^5.9.2"

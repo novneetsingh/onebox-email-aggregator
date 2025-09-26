@@ -9,7 +9,7 @@ export async function checkEsConnection() {
     const response = await esClient.ping();
 
     if (response) {
-      console.log("✅ Elasticsearch connection is healthy.");
+      console.log("✅ Elasticsearch is connected.");
       return;
     }
   } catch (error) {

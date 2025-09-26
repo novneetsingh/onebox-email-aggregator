@@ -9,14 +9,14 @@ export const accounts = [
       pass: process.env.GMAIL_PASS!,
     },
   },
-//   {
-//     name: "outlook",
-//     host: "outlook.office365.com",
-//     port: 993,
-//     secure: true,
-//     auth: {
-//       user: process.env.OUTLOOK_USER!,
-//       pass: process.env.OUTLOOK_PASS!,
-//     },
-//   },
+  //   {
+  //     name: "outlook",
+  //     host: "outlook.office365.com",
+  //     port: 993,
+  //     secure: true,
+  //     auth: {
+  //       user: process.env.OUTLOOK_USER!,
+  //       pass: process.env.OUTLOOK_PASS!,
+  //     },
+  //   },
 ];

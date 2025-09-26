@@ -3,14 +3,16 @@ import { processEmail, EmailData } from "./emailProcessor.service";
 import { saveEmailsInBulk, saveEmail } from "./openbox.service";
 
 export async function startImap(accountConfig: any) {
-  const client = new ImapFlow(accountConfig);
+  const client = new ImapFlow({ ...accountConfig, logger: false });
   await client.connect();
+
   console.log(`✅ Connected to ${accountConfig.auth.user}`);
 
   await client.mailboxOpen("INBOX");
 
   const since = new Date();
   since.setDate(since.getDate() - 30); // Fetches for the last 30 days
+
   const messages = await client.search({ since });
 
   // --- Initial Fetch with Local Batching ---
@@ -21,7 +23,7 @@ export async function startImap(accountConfig: any) {
       envelope: true,
       source: true,
     })) {
-      emailBatch.push(processEmail(accountConfig.name, msg));
+      emailBatch.push(await processEmail(accountConfig.name, msg));
     }
 
     if (emailBatch.length > 0) {
@@ -40,7 +42,7 @@ export async function startImap(accountConfig: any) {
       source: true,
     });
 
-    await saveEmail(processEmail(accountConfig.name, newMsg));
+    await saveEmail(await processEmail(accountConfig.name, newMsg));
 
     console.log("💾 Saved new email.");
   });
