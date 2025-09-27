@@ -7,6 +7,8 @@ import {
   deleteEmailById,
 } from "../services/elasticsearch.service";
 
+import { generateSuggestedReply } from "../services/geminiAI.service";
+
 const router = Router();
 
 // search email by text query
@@ -69,5 +71,23 @@ router.delete("/deleteById/:messageId", async (req: Request, res: Response) => {
     message: "Email deleted",
   });
 });
+
+// generate suggested reply
+router.get(
+  "/generateSuggestedReply/:messageId",
+  async (req: Request, res: Response) => {
+    const messageId = req.params.messageId;
+
+    const result = await generateSuggestedReply(messageId as string);
+
+    res.status(200).json({
+      success: true,
+      message: result
+        ? "Suggested reply generated"
+        : "Suggested reply not generated",
+      data: result,
+    });
+  }
+);
 
 export default router;

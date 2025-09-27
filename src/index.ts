@@ -7,6 +7,7 @@ import { startImap } from "./services/imap.service";
 import { checkEsConnection } from "./config/elasticsearch";
 import ErrorResponse from "./utils/errorResponse";
 import emailRoutes from "./routes/email.route";
+import vectorDBRoutes from "./routes/vectorDB.route";
 
 const app: Application = express();
 
@@ -23,12 +24,13 @@ checkEsConnection();
   }
 })();
 
-app.get("/", (req, res) => {
+app.get("/", (req: Request, res: Response) => {
   res.send("Onebox Email Aggregator");
 });
 
-// Email routes
+// routes
 app.use("/email", emailRoutes);
+app.use("/vectordb", vectorDBRoutes);
 
 // global error handling middleware
 app.use(

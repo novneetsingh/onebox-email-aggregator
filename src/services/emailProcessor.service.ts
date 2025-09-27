@@ -42,9 +42,22 @@ export async function processEmail(
 }
 
 // Extract text body from the email
+// This gives you only the plain text version (no HTML, no CSS, no headers)
 export async function extractTextBody(source: string): Promise<string> {
-  const parsed = await simpleParser(source);
+  const parsedText = (await simpleParser(source)).text?.trim();
 
-  // This gives you only the plain text version (no HTML, no CSS, no headers)
-  return parsed.text?.trim() || "";
+  // if parsed text is empty or undefined, return the stripped html
+  if (!parsedText || parsedText === "") {
+    return stripHtml(source);
+  }
+
+  return parsedText;
+}
+
+// strip html from the email
+function stripHtml(html: string): string {
+  return html
+    .replace(/<[^>]+>/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
 }
