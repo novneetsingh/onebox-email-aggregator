@@ -20,8 +20,7 @@ export async function categorizeEmail(
       Answer with only the category name.
     `;
 
-  const result = await geminiModel.generateContent(prompt);
-  const category = result.response.text().trim();
+  const category = (await geminiModel.invoke(prompt)).content;
 
-  return category;
+  return category as string;
 }

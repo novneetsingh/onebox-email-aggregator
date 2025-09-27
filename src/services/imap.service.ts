@@ -1,6 +1,6 @@
 import { ImapFlow } from "imapflow";
 import { processEmail, EmailData } from "./emailProcessor.service";
-import { saveEmailsInBulk, saveEmail } from "./openbox.service";
+import { saveEmailsInBulk, saveEmail } from "./elasticsearch.service";
 import { sendSlackNotification } from "./notification.service";
 
 export async function startImap(accountConfig: any) {
@@ -29,7 +29,6 @@ export async function startImap(accountConfig: any) {
 
     if (emailBatch.length > 0) {
       await saveEmailsInBulk(emailBatch);
-
       console.log(`💾 Saved ${emailBatch.length} emails.`);
     }
   } else {

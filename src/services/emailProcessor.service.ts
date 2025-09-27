@@ -5,6 +5,7 @@ export interface EmailData {
   account: string;
   subject: string;
   from: string;
+  to: string;
   date: Date;
   body: string;
   messageId: string;
@@ -20,11 +21,16 @@ export async function processEmail(
   const textBody: string = await extractTextBody(msg.source.toString());
   const sender: string = msg.envelope.from[0].address;
   const subject: string = msg.envelope.subject;
+  const to: string =
+    msg.envelope.to?.[0]?.address ||
+    msg.envelope.cc?.[0]?.address ||
+    msg.envelope.bcc?.[0]?.address;
 
   const email: EmailData = {
     account,
     subject,
     from: sender,
+    to,
     date: msg.envelope.date,
     body: textBody,
     messageId: msg.envelope.messageId,

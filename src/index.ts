@@ -2,7 +2,7 @@ import express, { Application, NextFunction, Request, Response } from "express";
 import dotenv from "dotenv";
 dotenv.config({ debug: true });
 import cors from "cors";
-import { accounts } from "./config/imap";
+import { accounts } from "./config/imapAccounts";
 import { startImap } from "./services/imap.service";
 import { checkEsConnection } from "./config/elasticsearch";
 import ErrorResponse from "./utils/errorResponse";

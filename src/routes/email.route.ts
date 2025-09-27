@@ -3,7 +3,9 @@ import {
   getAllEmails,
   searchEmail,
   deleteAllEmails,
-} from "../services/openbox.service";
+  getEmailById,
+  deleteEmailById,
+} from "../services/elasticsearch.service";
 
 const router = Router();
 
@@ -40,6 +42,31 @@ router.delete("/all", async (req: Request, res: Response) => {
   res.status(200).json({
     success: true,
     message: "All emails deleted",
+  });
+});
+
+// get a email by messageId
+router.get("/searchById/:messageId", async (req: Request, res: Response) => {
+  const messageId = req.params.messageId;
+
+  const result = await getEmailById(messageId as string);
+
+  res.status(200).json({
+    success: true,
+    message: result ? "Email found" : "Email not found",
+    data: result,
+  });
+});
+
+// delete a email by messageId
+router.delete("/deleteById/:messageId", async (req: Request, res: Response) => {
+  const messageId = req.params.messageId;
+
+  await deleteEmailById(messageId as string);
+
+  res.status(200).json({
+    success: true,
+    message: "Email deleted",
   });
 });
 
