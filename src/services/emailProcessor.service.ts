@@ -1,5 +1,5 @@
-import { categorizeEmail } from "./openbox.service";
 import { simpleParser } from "mailparser";
+import { categorizeEmail } from "./geminiAI.service";
 
 export interface EmailData {
   account: string;
@@ -40,5 +40,5 @@ export async function extractTextBody(source: string): Promise<string> {
   const parsed = await simpleParser(source);
 
   // This gives you only the plain text version (no HTML, no CSS, no headers)
-  return parsed.text || "";
+  return parsed.text?.trim() || "";
 }

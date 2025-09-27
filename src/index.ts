@@ -13,15 +13,15 @@ const app: Application = express();
 app.use(express.json());
 app.use(cors());
 
+// Check Elasticsearch connection
+checkEsConnection();
+
 // Start IMAP for all accounts
 (async () => {
   for (const account of accounts) {
     startImap(account).catch((err) => console.error(err));
   }
 })();
-
-// Check Elasticsearch connection
-checkEsConnection();
 
 app.get("/", (req, res) => {
   res.send("Onebox Email Aggregator");

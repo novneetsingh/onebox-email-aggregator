@@ -1,6 +1,7 @@
 import { ImapFlow } from "imapflow";
 import { processEmail, EmailData } from "./emailProcessor.service";
 import { saveEmailsInBulk, saveEmail } from "./openbox.service";
+import { sendSlackNotification } from "./notification.service";
 
 export async function startImap(accountConfig: any) {
   const client = new ImapFlow({ ...accountConfig, logger: false });
@@ -42,7 +43,13 @@ export async function startImap(accountConfig: any) {
       source: true,
     });
 
-    await saveEmail(await processEmail(accountConfig.name, newMsg));
+    const email = await processEmail(accountConfig.name, newMsg);
+
+    // Save email and send slack notification if email is interested
+    await Promise.all([
+      saveEmail(email),
+      email.category === "Interested" && sendSlackNotification(email),
+    ]);
 
     console.log("💾 Saved new email.");
   });
