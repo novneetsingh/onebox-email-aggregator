@@ -25,7 +25,7 @@ checkEsConnection();
 })();
 
 app.get("/", (req: Request, res: Response) => {
-  res.send("Onebox Email Aggregator");
+  res.send("Welcome to Onebox Email Aggregator server");
 });
 
 // routes
