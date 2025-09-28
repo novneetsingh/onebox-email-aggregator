@@ -8,10 +8,6 @@ An Express + TypeScript backend that connects to one or more IMAP inboxes, inges
 
 https://documenter.getpostman.com/view/32416134/2sB3QDwDGJ
 
-### Live Demo
-
-https://onebox-email-aggregator-server.onrender.com
-
 ## Tech Stack
 
 - **Runtime**: Node.js + TypeScript
