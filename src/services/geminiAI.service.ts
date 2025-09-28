@@ -56,7 +56,7 @@ export async function generateSuggestedReply(messageId: string) {
 
   Keep it very concise and to the point.
 
-  create reply message according to the Context (agenda/product details) that I provided.`;
+  create only reply message body according to the Context (agenda/product details) that I provided.`;
 
   const response = (await geminiModel.invoke(prompt)).content as string;
 
