@@ -8,13 +8,17 @@ import { checkEsConnection } from "./config/elasticsearch";
 import ErrorResponse from "./utils/errorResponse";
 import emailRoutes from "./routes/email.route";
 import vectorDBRoutes from "./routes/vectorDB.route";
+import { startWorkers } from "./services/workers.service";
 
 const app: Application = express();
 
 app.use(express.json());
 app.use(cors());
 
-// Check Elasticsearch connection
+// start workers
+startWorkers();
+
+// // Check Elasticsearch connection
 checkEsConnection();
 
 // Start IMAP for all accounts

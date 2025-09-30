@@ -19,10 +19,12 @@
     "@langchain/pinecone": "^0.2.0",
     "@pinecone-database/pinecone": "^5.1.2",
     "axios": "^1.12.2",
+    "bullmq": "^5.59.0",
     "cors": "^2.8.5",
     "dotenv": "^17.2.2",
     "express": "^5.1.0",
     "imapflow": "^1.0.197",
+    "ioredis": "^5.8.0",
     "mailparser": "^3.7.4"
   },
   "devDependencies": {

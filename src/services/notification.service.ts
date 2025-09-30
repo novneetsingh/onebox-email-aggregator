@@ -14,5 +14,5 @@ export async function sendSlackNotification(email: EmailData) {
     headers: { "Content-Type": "application/json" },
   });
 
-  console.log("📤 Slack notification sent successfully");
+  
 }

@@ -1,7 +1,6 @@
 import { ImapFlow } from "imapflow";
 import { processEmail, EmailData } from "./emailProcessor.service";
-import { saveEmailsInBulk, saveEmail } from "./elasticsearch.service";
-import { sendSlackNotification } from "./notification.service";
+import { incomingEmailQueue, notificationQueue } from "../config/bullmq";
 
 export async function startImap(accountConfig: any) {
   const client = new ImapFlow({ ...accountConfig, logger: false });
@@ -18,18 +17,18 @@ export async function startImap(accountConfig: any) {
 
   // --- Initial Fetch with Local Batching ---
   if (messages && messages.length > 0) {
-    let emailBatch: EmailData[] = [];
+    let emails: EmailData[] = [];
 
     for await (let msg of client.fetch(messages, {
       envelope: true,
       source: true,
     })) {
-      emailBatch.push(await processEmail(accountConfig.name, msg));
+      emails.push(await processEmail(accountConfig.name, msg));
     }
 
-    if (emailBatch.length > 0) {
-      await saveEmailsInBulk(emailBatch);
-      console.log(`💾 Saved ${emailBatch.length} emails.`);
+    if (emails.length > 0) {
+      // enqueue batch to incoming-email queue
+      await incomingEmailQueue.add("process-batch-emails", emails);
     }
   } else {
     console.log("📭 No new emails found in the last 30 days");
@@ -42,14 +41,13 @@ export async function startImap(accountConfig: any) {
       source: true,
     });
 
-    const email = await processEmail(accountConfig.name, newMsg);
+    const email: EmailData = await processEmail(accountConfig.name, newMsg);
 
-    // Save email and send slack notification if email is interested
+    // enqueue to incoming-email queue and send notification if email is interested
     await Promise.all([
-      saveEmail(email),
-      email.category === "Interested" && sendSlackNotification(email),
+      incomingEmailQueue.add("process-incoming-email", email),
+      email.category === "Interested" &&
+        notificationQueue.add("send-notification", email),
     ]);
-
-    console.log("💾 Saved new email.");
   });
 }

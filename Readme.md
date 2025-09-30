@@ -14,24 +14,10 @@ https://documenter.getpostman.com/view/32416134/2sB3QDwDGJ
 - **Framework**: Express
 - **Email**: ImapFlow, mailparser
 - **AI**: Google Gemini via LangChain
+- **Job Queue**: BullMQ using Redis
 - **Search**: Elasticsearch
 - **Vector DB**: Pinecone
 - **Notifications**: Slack Incoming Webhook
-
----
-
-## Project Description
-
-The goal of the Onebox Email Aggregator is to centralize email processing across accounts (e.g., Gmail, Outlook) and enhance productivity via AI and search:
-
-- **Ingest**: Connects to IMAP, fetches emails from the last 30 days plus listens for new emails in real time.
-- **Normalize**: Extracts plain text content from each email, capturing key fields such as `from`, `to`, `subject`, `date`, `messageId`, `body`, and `folder`.
-- **Classify**: Uses Gemini to classify emails into categories: `Interested`, `Meeting Booked`, `Not Interested`, `Spam`, and `Out of Office`.
-- **Index & Search**: Stores emails in Elasticsearch to enable fast text search and retrieval.
-- **RAG Context**: Uses Pinecone to store a compact knowledge base for agenda/product context and retrieves relevant context during suggested reply generation.
-- **Notify**: Sends a Slack notification whenever an email is categorized as `Interested`.
-
-This service runs continuously, synchronizing emails in bulk initially and then streaming new emails as they arrive.
 
 ---
 
@@ -48,6 +34,13 @@ This service runs continuously, synchronizing emails in bulk initially and then 
   - Parses raw emails using `mailparser` and extracts plain-text bodies.
   - Falls back to HTML stripping if no text version is found.
   - Returns a normalized `EmailData` object for downstream processing.
+
+- **Asynchronous Job Processing (BullMQ)** (`src/services/workers.service.ts`, `src/config/bullmq.ts`)
+
+  - Uses BullMQ with Redis to manage background tasks like email processing and notifications.
+  - Ensures reliable execution, retries for failed jobs, and prevents blocking the main application thread.
+  - Handles both bulk historical email processing and real-time incoming emails.
+  - Also handles notification jobs for interested email leads.
 
 - **AI-powered email categorization** (`src/services/geminiAI.service.ts`)
 
@@ -86,9 +79,11 @@ This service runs continuously, synchronizing emails in bulk initially and then 
 ```
 onebox-email-aggregator/
 ├─ src/
-│  ├─ index.ts                      # App entrypoint (Express app, routes, IMAP start, error middleware)
+│  ├─ index.ts                     # App entrypoint (Express app, routes, IMAP start, error middleware)
 │  ├─ config/
 │  │  ├─ elasticsearch.ts          # ES client and connectivity check
+│  │  ├─ bullmq.ts                 # BullMQ queue definitions and configuration
+│  │  ├─ redis.ts                  # Redis client for BullMQ and other caching needs
 │  │  ├─ geminiAI.ts               # Gemini model configuration
 │  │  ├─ imapAccounts.ts           # IMAP accounts configuration (reads creds from env)
 │  │  └─ pinecone.ts               # Pinecone client and index instance
@@ -100,14 +95,15 @@ onebox-email-aggregator/
 │  │  ├─ emailProcessor.service.ts # Email parse/normalize utilities
 │  │  ├─ geminiAI.service.ts       # Categorization & suggested reply with Gemini
 │  │  ├─ imap.service.ts           # IMAP streaming + initial batch ingestion
+│  │  ├─ workers.service.ts        # BullMQ worker definitions and job processing logic
 │  │  ├─ notification.service.ts   # Slack notification sender
 │  │  └─ vectorDB.service.ts       # Embeddings CRUD + search in Pinecone
 │  └─ utils/
 │     ├─ errorResponse.ts          # Custom error class used across services
 │     └─ knowledgeBase.ts          # Compact KB used for embeddings and RAG context
-├─ package.json                     # Scripts and dependencies
-├─ tsconfig.json                    # TypeScript configuration
-└─ Readme.md                        # This file
+├─ package.json                    # Scripts and dependencies
+├─ tsconfig.json                   # TypeScript configuration
+└─ Readme.md                       # This file
 ```
 
 ---
@@ -141,6 +137,11 @@ GEMINI_API_KEY=your-gemini-api-key
 # Elasticsearch
 ES_INDEX_NAME=onebox-emails
 ES_URL=https://<user>:<password>@<host>:443
+
+# Redis (for BullMQ)
+REDIS_PASSWORD=redis_password
+REDIS_HOST=redis_host
+REDIS_PORT=redis_port
 
 # Slack Incoming Webhook
 SLACK_WEBHOOK_URL=https://hooks.slack.com/services/...
