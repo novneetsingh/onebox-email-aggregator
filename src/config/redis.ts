@@ -1,10 +1,16 @@
 import Redis from "ioredis";
+import logger from "../utils/logger";
 
-const redis = new Redis({
-  password: process.env.REDIS_PASSWORD!,
-  host: process.env.REDIS_HOST!,
-  port: Number(process.env.REDIS_PORT!),
+export const redisClient = new Redis(process.env.REDIS_URL!, {
   maxRetriesPerRequest: null,
 });
 
-export default redis;
+export const checkRedisConnection = async () => {
+  try {
+    await redisClient.ping();
+    logger.info("✅ Redis connection established");
+  } catch (error) {
+    logger.error("❌ Redis connection failed:", error);
+    process.exit(1);
+  }
+};

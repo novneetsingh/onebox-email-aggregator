@@ -1,8 +1,17 @@
 import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
+import logger from "../utils/logger";
 
-const geminiModel = new ChatGoogleGenerativeAI({
-  model: "gemini-2.5-flash-lite",
+export const geminiModel = new ChatGoogleGenerativeAI({
+  model: "gemini-3.5-flash",
   apiKey: process.env.GEMINI_API_KEY!,
 });
 
-export default geminiModel;
+export const checkGeminiConnection = async () => {
+  try {
+    await geminiModel.invoke("Hello Gemini");
+    logger.info("✅ Gemini connection established");
+  } catch (error) {
+    logger.error("❌ Gemini connection failed:", error);
+    process.exit(1);
+  }
+};

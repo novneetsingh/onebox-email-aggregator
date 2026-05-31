@@ -1,53 +1,66 @@
+import "dotenv/config";
 import express, { Application, NextFunction, Request, Response } from "express";
-import dotenv from "dotenv";
-dotenv.config({ debug: true });
 import cors from "cors";
-import { accounts } from "./config/imapAccounts";
-import { startImap } from "./services/imap.service";
-import { checkEsConnection } from "./config/elasticsearch";
+import cookieParser from "cookie-parser";
+import { checkOpenSearchConnection } from "./config/opensearch";
+import { checkRedisConnection } from "./config/redis";
+import { checkPineconeConnection } from "./config/pinecone";
+import { checkDbConnection } from "./config/prisma";
+import { checkGeminiConnection } from "./config/geminiAI";
+import mainRouter, { webhooksRouter } from "./routes";
+import { startWorkers } from "./workers/workers";
 import ErrorResponse from "./utils/errorResponse";
-import emailRoutes from "./routes/email.route";
-import vectorDBRoutes from "./routes/vectorDB.route";
-import { startWorkers } from "./services/workers.service";
+import logger from "./utils/logger";
 
 const app: Application = express();
 
+// ── Core middleware ────────────────────────────────────────────────────────────
 app.use(express.json());
-app.use(cors());
+app.use(cookieParser());
+app.use(cors({ origin: process.env.FRONTEND_URL, credentials: true }));
 
-// start workers
-startWorkers();
-
-// // Check Elasticsearch connection
-checkEsConnection();
-
-// Start IMAP for all accounts
-(async () => {
-  for (const account of accounts) {
-    startImap(account).catch((err) => console.error(err));
-  }
-})();
-
-app.get("/", (req: Request, res: Response) => {
-  res.send("Welcome to Onebox Email Aggregator server");
+// ── Request logger ─────────────────────────────────────────────────────────────
+app.use((req: Request, res: Response, next: NextFunction) => {
+  const start = Date.now();
+  res.on("finish", () =>
+    logger.http(
+      `[${req.method}] ${req.originalUrl} ${res.statusCode} (${Date.now() - start}ms)`,
+    ),
+  );
+  next();
 });
 
-// routes
-app.use("/email", emailRoutes);
-app.use("/vectordb", vectorDBRoutes);
+// ── Health check ───────────────────────────────────────────────────────────────
+app.get("/", (_req: Request, res: Response) => {
+  res.send("Onebox Email Aggregator API is running");
+});
 
-// global error handling middleware
+// ── Routes ─────────────────────────────────────────────────────────────────────
+app.use("/api/webhooks", webhooksRouter); // No /api/v1 — Pub/Sub needs exact URL
+app.use("/api/v1", mainRouter);
+
+// ── Global error handler ───────────────────────────────────────────────────────
 app.use(
-  (err: ErrorResponse, req: Request, res: Response, next: NextFunction) => {
-    console.error(err.message);
+  (err: ErrorResponse, req: Request, res: Response, _next: NextFunction) => {
+    logger.error(
+      `[${req.method}] ${req.originalUrl} - ${err.message}\n${err.stack}`,
+    );
     res.status(err.statusCode || 500).json({
       success: false,
       message: err.message || "Internal Server Error",
     });
-  }
+  },
 );
 
-const port = process.env.PORT || 4000;
-app.listen(port, () => {
-  console.log(`Server is running at http://localhost:${port}`);
+// ── Startup ────────────────────────────────────────────────────────────────────
+const PORT = process.env.PORT || 3000;
+
+app.listen(PORT, async () => {
+  logger.info(`🚀 Onebox API running at http://localhost:${PORT}`);
+  await checkDbConnection();
+  checkOpenSearchConnection();
+  checkRedisConnection();
+  checkPineconeConnection();
+  checkGeminiConnection();
+  startWorkers();
 });

@@ -1,0 +1,65 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id        String         @id @default(uuid())
+  email     String         @unique
+  googleId  String         @unique // Google OAuth sub claim
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+  accounts  EmailAccount[]
+  emails    Email[]
+}
+
+model EmailAccount {
+  id           String    @id @default(uuid())
+  userId       String
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  provider     String // "gmail" only for now
+  email        String
+  accessToken  String // Encrypted
+  refreshToken String // Encrypted (long-lived)
+  historyId    String? // Gmail: last processed historyId for delta sync
+  watchExpiry  DateTime? // Gmail: Pub/Sub watch expires every 7 days
+  isActive     Boolean   @default(true)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  emails       Email[]
+
+  @@unique([userId, email])
+}
+
+model Email {
+  id        String       @id @default(uuid())
+  userId    String
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accountId String
+  account   EmailAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+
+  messageId String  @unique // Gmail message ID (deduplication)
+  threadId  String? // For conversation grouping (future)
+
+  subject String
+  snippet String // First 200 chars for inbox list view
+  body    String // Plain text only for now
+  from    String
+  to      String[]
+
+  folder   String // "inbox" | "sent" | "spam" | "trash"
+  category String // AI result: "interested" | "not interested" | "spam" | "out of office"
+
+  isRead    Boolean  @default(false)
+  date      DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId, folder])
+  @@index([userId, category])
+  @@index([accountId])
+}
